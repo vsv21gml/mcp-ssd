@@ -1,5 +1,8 @@
 const API_BASE = "/api";
-const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL || "http://localhost:4001";
+const RAW_ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL || "http://localhost:4001/oauth";
+const ACCOUNT_URL = RAW_ACCOUNT_URL.includes("/oauth")
+  ? RAW_ACCOUNT_URL
+  : `${RAW_ACCOUNT_URL.endsWith("/") ? RAW_ACCOUNT_URL.slice(0, -1) : RAW_ACCOUNT_URL}/oauth`;
 const SSO_PROVIDER = (process.env.NEXT_PUBLIC_SSO_PROVIDER || "oidc").toLowerCase();
 
 export function getAccessToken() {

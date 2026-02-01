@@ -115,3 +115,36 @@ body {
   padding: 0;
 }
 
+.sdisk-title {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sdisk-topbar-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sdisk-app-header {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--admin-border);
+  backdrop-filter: blur(10px);
+}
+
+.sdisk-app-header-inner {
+  width: 100%;
+  margin: 0;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sdisk-profile-btn {
+  padding: 6px 12px;
+  border-radius: 999px;
+}

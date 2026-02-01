@@ -32,7 +32,7 @@ export class OidcProviderService {
     private readonly config: ConfigService,
     @InjectRepository(OAuthClientEntity) private readonly clientsRepo: Repository<OAuthClientEntity>
   ) {
-    const issuer = config.get<string>("ACCOUNT_ISSUER") || "http://localhost:4001/oauth";
+    const issuer = config.get<string>("ACCOUNT_ISSUER") || "http://localhost:4001/oauth/oidc";
     const jwks = buildJwks(config.get<string>("OAUTH_JWKS_JSON"));
     const clients = parseClients(config.get<string>("OAUTH_CLIENTS_JSON"));
     const resourceUrl = config.get<string>("OAUTH_RESOURCE_URL") || "http://localhost:4003";

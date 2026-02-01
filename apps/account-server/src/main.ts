@@ -10,6 +10,15 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const port = Number(config.get("ACCOUNT_PORT", "4001"));
 
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/auth/")) {
+      return res.redirect(`/oauth${req.url}`);
+    }
+    return next();
+  });
+
+  app.setGlobalPrefix("oauth");
+
   const corsOriginRaw = config.get<string>("CORS_ORIGIN", "*");
   const corsOrigin =
     corsOriginRaw === "*"
@@ -33,7 +42,7 @@ async function bootstrap() {
   SwaggerModule.setup("docs", app, document);
 
   const oidcProvider = app.get(OidcProviderService);
-  app.use("/oauth", oidcProvider.callback());
+  app.use("/oauth/oidc", oidcProvider.callback());
 
   await app.listen(port);
   // eslint-disable-next-line no-console

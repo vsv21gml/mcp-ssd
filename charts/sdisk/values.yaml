@@ -1,0 +1,96 @@
+imagePullPolicy: IfNotPresent
+
+web:
+  image: sdisk/web:latest
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    NEXT_PUBLIC_ACCOUNT_URL: https://web.example.com/oauth
+    NEXT_PUBLIC_SSO_PROVIDER: saml
+    MANAGEMENT_API: http://management-server:4002/api
+
+adminWeb:
+  image: sdisk/admin-web:latest
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3001
+  env:
+    NEXT_PUBLIC_ACCOUNT_URL: https://web.example.com/oauth
+    NEXT_PUBLIC_SSO_PROVIDER: saml
+    ACCOUNT_API: http://account-server:4001/oauth
+
+accountServer:
+  image: sdisk/account-server:latest
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 4001
+  env:
+    ACCOUNT_PORT: "4001"
+    ACCOUNT_ISSUER: https://web.example.com/oauth/oidc
+    CORS_ORIGIN: https://web.example.com,https://admin.example.com
+    PG_HOST: postgres
+    PG_PORT: "5432"
+    PG_USER: postgres
+    PG_PASSWORD: postgres
+    PG_DATABASE: sdisk
+    JWT_SHARED_SECRET: change-me
+
+managementServer:
+  image: sdisk/management-server:latest
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 4002
+  env:
+    MGMT_PORT: "4002"
+    CORS_ORIGIN: https://web.example.com
+    PG_HOST: postgres
+    PG_PORT: "5432"
+    PG_USER: postgres
+    PG_PASSWORD: postgres
+    PG_DATABASE: sdisk
+    STORAGE_ROOT: /data/storage
+    ACCOUNT_ISSUER: http://account-server:4001/oauth/oidc
+    JWT_SHARED_SECRET: change-me
+    SSL_ENABLE: ""
+    SSL_IGNORE: ""
+
+mcpServer:
+  image: sdisk/mcp-server:latest
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 4003
+  env:
+    MCP_HTTP_PORT: "4003"
+    MCP_HOST: 0.0.0.0
+    MCP_PATH: /mcp
+    MCP_PUBLIC_URL: https://mcp.example.com
+    MCP_RESOURCE_URL: https://mcp.example.com/mcp
+    ACCOUNT_ISSUER: https://web.example.com/oauth/oidc
+    MGMT_BASE_URL: http://management-server:4002/api
+    MCP_DANGEROUSLY_ALLOW_INSECURE_ISSUER_URL: "1"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  webHost: web.example.com
+  adminHost: admin.example.com
+  mcpHost: mcp.example.com
+  annotations: {}
+
+postgres:
+  enabled: true
+  image: postgres:16
+  service:
+    port: 5432
+  env:
+    POSTGRES_DB: sdisk
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+  storage:
+    size: 10Gi

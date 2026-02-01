@@ -6,7 +6,7 @@ import { ConfigService } from "@nestjs/config";
 @Injectable()
 export class OidcStrategy extends PassportStrategy(Strategy, "oidc") {
   constructor(private readonly config: ConfigService) {
-    const fallbackIssuer = config.get<string>("ACCOUNT_ISSUER", "http://localhost:4001/oauth");
+    const fallbackIssuer = config.get<string>("ACCOUNT_ISSUER", "http://localhost:4001/oauth/oidc");
     const issuer = config.get<string>("OIDC_ISSUER") || fallbackIssuer;
     const authorizationURL =
       config.get<string>("OIDC_AUTHORIZATION_URL") || `${issuer}/authorize`;

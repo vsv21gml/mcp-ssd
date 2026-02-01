@@ -14,12 +14,12 @@ import {
   type CallToolRequest
 } from "@modelcontextprotocol/sdk/types.js";
 
-const MGMT_BASE_URL = process.env.MGMT_BASE_URL || "http://localhost:4002";
+const MGMT_BASE_URL = process.env.MGMT_BASE_URL || "http://localhost:4002/api";
 const HTTP_PORT = Number(process.env.MCP_HTTP_PORT || "4003");
 const MCP_PATH = process.env.MCP_PATH || "/mcp";
 const PUBLIC_BASE = process.env.MCP_PUBLIC_URL || `http://localhost:${HTTP_PORT}`;
 const RESOURCE_URL = process.env.MCP_RESOURCE_URL || `${PUBLIC_BASE}${MCP_PATH}`;
-const ACCOUNT_ISSUER = process.env.ACCOUNT_ISSUER || "http://localhost:4001/oauth";
+const ACCOUNT_ISSUER = process.env.ACCOUNT_ISSUER || "http://localhost:4001/oauth/oidc";
 
 const oauthMetadata = {
   issuer: ACCOUNT_ISSUER,

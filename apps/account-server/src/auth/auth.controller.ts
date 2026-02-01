@@ -38,7 +38,7 @@ export class AuthController {
       role: ensured.role
     })
       .setProtectedHeader({ alg: "HS256" })
-      .setIssuer(this.config.get<string>("ACCOUNT_ISSUER", "http://localhost:4001/oauth"))
+      .setIssuer(this.config.get<string>("ACCOUNT_ISSUER", "http://localhost:4001/oauth/oidc"))
       .setIssuedAt()
       .setExpirationTime(`${ttlSeconds}s`)
       .sign(new TextEncoder().encode(secret));

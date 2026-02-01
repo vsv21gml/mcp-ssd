@@ -9,6 +9,8 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const port = Number(config.get("MGMT_PORT", "4002"));
 
+  app.setGlobalPrefix("api");
+
   app.enableCors({
     origin: config.get("CORS_ORIGIN", "*")
   });

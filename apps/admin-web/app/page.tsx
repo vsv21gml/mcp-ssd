@@ -7,6 +7,7 @@ import {
   Button,
   Group,
   LoadingOverlay,
+  Menu,
   Modal,
   Stack,
   Table,
@@ -39,7 +40,7 @@ export default function AdminPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EditorState>(emptyEditor);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [me, setMe] = useState<{ name?: string | null; email?: string | null; role?: string } | null>(null);
+  const [me, setMe] = useState<{ id?: string | null; name?: string | null; email?: string | null; role?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [section, setSection] = useState<Section>("clients");
 
@@ -98,51 +99,44 @@ export default function AdminPage() {
     setModalOpen(true);
   };
 
-  if (authLoading) {
-    return (
-      <main className="admin-main">
-        <div className="admin-shell" style={{ display: "grid", placeItems: "center" }}>
-          <Text size="sm" c="dimmed">
-            Authenticating...
-          </Text>
-        </div>
-      </main>
-    );
-  }
-
   return (
     <>
-      <header className="admin-header">
-        <div className="admin-header-inner">
-          <div>
-            <div className="admin-title">Admin Console</div>
-            <div className="admin-subtitle">OAuth client registry & user roles</div>
+      <LoadingOverlay visible={authLoading} />
+      <header className="sdisk-app-header">
+        <div className="sdisk-app-header-inner">
+          <div className="sdisk-topbar-title">
+            <div className="sdisk-title">Samsung Shared Disk Admin</div>
           </div>
-          <Group>
-            <Group gap="sm">
-              <Avatar radius="xl" size="sm" color="samsung">
-                {(me?.name || me?.email || "A").charAt(0).toUpperCase()}
-              </Avatar>
-              <div style={{ textAlign: "left" }}>
-                <Text size="sm" fw={600}>
-                  {me?.name || me?.email || "Admin"}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {me?.role || "MEMBER"}
-                </Text>
-              </div>
-            </Group>
-            <Button
-              variant="light"
-              color="red"
-              onClick={() => {
-                clearAccessToken();
-                redirectToSso();
-              }}
-            >
-              Logout
-            </Button>
-          </Group>
+          <Menu position="bottom-end" shadow="md">
+            <Menu.Target>
+              <Button variant="subtle" className="sdisk-profile-btn">
+                <Group gap="sm">
+                  <Avatar radius="xl" size="sm" color="samsung">
+                    {(me?.name || me?.email || "A").charAt(0).toUpperCase()}
+                  </Avatar>
+                  <div style={{ textAlign: "left" }}>
+                    <Text size="sm" fw={600}>
+                      {me?.name || me?.email || "Admin"}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {me?.email || "SSO account"}
+                    </Text>
+                  </div>
+                </Group>
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                color="red"
+                onClick={() => {
+                  clearAccessToken();
+                  redirectToSso();
+                }}
+              >
+                Logout
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </div>
       </header>
 
@@ -172,7 +166,7 @@ export default function AdminPage() {
                 </Group>
 
                 <div style={{ position: "relative" }}>
-                  <LoadingOverlay visible={loading} />
+                  <LoadingOverlay visible={!authLoading && loading} />
                   <Table withRowBorders highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>
@@ -237,7 +231,7 @@ export default function AdminPage() {
                 </Group>
 
                 <div style={{ position: "relative" }}>
-                  <LoadingOverlay visible={loading} />
+                  <LoadingOverlay visible={!authLoading && loading} />
                   <Table withRowBorders highlightOnHover>
                     <Table.Thead>
                       <Table.Tr>

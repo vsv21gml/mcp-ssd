@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const ACCOUNT_API = process.env.ACCOUNT_API || "http://localhost:4001";
+const ACCOUNT_API = process.env.ACCOUNT_API || "http://localhost:4001/oauth";
 
 function buildHeaders(request: Request) {
   const headers: Record<string, string> = { "Content-Type": "application/json" };

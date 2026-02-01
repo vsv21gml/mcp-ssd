@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const MGMT_API = process.env.MANAGEMENT_API || "http://localhost:4002";
+const MGMT_API = process.env.MANAGEMENT_API || "http://localhost:4002/api";
 
 function buildHeaders(request: Request) {
   const headers: Record<string, string> = {};
