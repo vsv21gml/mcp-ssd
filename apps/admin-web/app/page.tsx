@@ -5,6 +5,7 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Checkbox,
   Group,
   LoadingOverlay,
   Menu,
@@ -43,6 +44,7 @@ export default function AdminPage() {
   const [me, setMe] = useState<{ id?: string | null; name?: string | null; email?: string | null; role?: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [section, setSection] = useState<Section>("clients");
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     captureTokenFromUrl();
@@ -97,6 +99,36 @@ export default function AdminPage() {
     setEditing(emptyEditor);
     setEditingId(null);
     setModalOpen(true);
+  };
+
+  const toggleClientSelection = (clientId: string) => {
+    setSelectedClientIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllClients = (checked: boolean) => {
+    if (!checked) {
+      setSelectedClientIds(new Set());
+      return;
+    }
+    setSelectedClientIds(new Set(items.map((client) => client.clientId)));
+  };
+
+  const handleBulkDelete = async () => {
+    const targets = Array.from(selectedClientIds);
+    if (targets.length === 0) return;
+    if (!window.confirm(`Delete ${targets.length} selected client(s)?`)) return;
+    for (const clientId of targets) {
+      await remove(clientId);
+    }
+    setSelectedClientIds(new Set());
   };
 
   return (
@@ -162,34 +194,58 @@ export default function AdminPage() {
               <>
                 <Group justify="space-between" mb="md">
                   <Text fw={600}>Registered Clients</Text>
-                  <Button onClick={handleCreate}>New Client</Button>
+                  <Group gap="sm">
+                    <Button variant="light" color="red" onClick={handleBulkDelete} disabled={selectedClientIds.size === 0}>
+                      Delete
+                    </Button>
+                    <Button onClick={handleCreate}>New Client</Button>
+                  </Group>
                 </Group>
 
                 <div style={{ position: "relative" }}>
                   <LoadingOverlay visible={!authLoading && loading} />
                   <Table withRowBorders highlightOnHover>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th>Client ID</Table.Th>
-                        <Table.Th>Secret</Table.Th>
-                        <Table.Th>Redirect URIs</Table.Th>
-                        <Table.Th>Updated</Table.Th>
-                        <Table.Th></Table.Th>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>
+                        <Checkbox
+                          checked={items.length > 0 && selectedClientIds.size === items.length}
+                          indeterminate={selectedClientIds.size > 0 && selectedClientIds.size < items.length}
+                          onChange={(event) => toggleAllClients(event.currentTarget.checked)}
+                          aria-label="Select all clients"
+                        />
+                      </Table.Th>
+                      <Table.Th>Client ID</Table.Th>
+                      <Table.Th>Secret</Table.Th>
+                      <Table.Th>Redirect URIs</Table.Th>
+                      <Table.Th>Updated</Table.Th>
+                      <Table.Th></Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
-                      {items.length === 0 && (
-                        <Table.Tr>
-                          <Table.Td colSpan={5}>
-                            <Text size="sm" c="dimmed">
-                              No clients
-                            </Text>
-                          </Table.Td>
-                        </Table.Tr>
-                      )}
-                      {items.map((client) => (
-                        <Table.Tr key={client.clientId}>
-                          <Table.Td>{client.clientId}</Table.Td>
+                    {items.length === 0 && (
+                      <Table.Tr>
+                        <Table.Td colSpan={6}>
+                          <Text size="sm" c="dimmed">
+                            No clients
+                          </Text>
+                        </Table.Td>
+                      </Table.Tr>
+                    )}
+                    {items.map((client) => (
+                      <Table.Tr key={client.clientId}>
+                        <Table.Td>
+                          <Checkbox
+                            checked={selectedClientIds.has(client.clientId)}
+                            onChange={() => toggleClientSelection(client.clientId)}
+                            aria-label={`Select ${client.clientId}`}
+                          />
+                        </Table.Td>
+                        <Table.Td>
+                          <Button variant="subtle" size="xs" onClick={() => handleEdit(client)}>
+                            {client.clientId}
+                          </Button>
+                        </Table.Td>
                           <Table.Td>
                             {client.clientSecret ? <Badge color="samsung">Stored</Badge> : "-"}
                           </Table.Td>
@@ -199,23 +255,7 @@ export default function AdminPage() {
                             </Text>
                           </Table.Td>
                           <Table.Td>{new Date(client.updatedAt).toLocaleString()}</Table.Td>
-                          <Table.Td>
-                            <Group gap="xs">
-                              <ActionIcon variant="light" onClick={() => handleEdit(client)} aria-label="Edit">
-                                Edit
-                              </ActionIcon>
-                              <ActionIcon
-                                variant="light"
-                                color="red"
-                                onClick={async () => {
-                                  await remove(client.clientId);
-                                }}
-                                aria-label="Delete"
-                              >
-                                Del
-                              </ActionIcon>
-                            </Group>
-                          </Table.Td>
+                          <Table.Td></Table.Td>
                         </Table.Tr>
                       ))}
                     </Table.Tbody>

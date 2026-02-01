@@ -62,13 +62,20 @@ export async function fetchMe() {
 }
 
 export async function fetchFiles(params: { status?: string; page?: number; size?: number }) {
-  const url = new URL("/files", API_BASE);
+  const base = typeof window === "undefined" ? "http://localhost" : window.location.origin;
+  const url = new URL(`${API_BASE}/files`, base);
   if (params.status) url.searchParams.set("status", params.status);
   if (params.page) url.searchParams.set("page", String(params.page));
   if (params.size) url.searchParams.set("size", String(params.size));
 
   const response = await apiFetch(url.pathname + url.search);
-  if (!response.ok) throw new Error("Failed to load files");
+  if (response.status === 401) {
+    return { items: [], total: 0, page: params.page || 1, size: params.size || 10 };
+  }
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Failed to load files");
+  }
   return response.json();
 }
 

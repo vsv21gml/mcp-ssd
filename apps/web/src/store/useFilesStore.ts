@@ -42,14 +42,20 @@ export const useFilesStore = create<FilesState>((set, get) => ({
   select: (file) => set({ selected: file }),
   fetch: async (status, page = 1) => {
     set({ loading: true, status, page });
-    const data = await fetchFiles({ status, page, size: get().size });
-    set({
-      items: data.items,
-      total: data.total,
-      page: data.page,
-      size: data.size,
-      loading: false
-    });
+    try {
+      const data = await fetchFiles({ status, page, size: get().size });
+      set({
+        items: data.items,
+        total: data.total,
+        page: data.page,
+        size: data.size,
+        loading: false
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error(error);
+      set({ loading: false });
+    }
   },
   upload: async (file, approverIds) => {
     set({ loading: true });
