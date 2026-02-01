@@ -1,0 +1,11 @@
+version: 3
+agent:
+  authtoken: 38MNu38D4o6tP6ZSubOsbGwuOql_3SunUpctEcvL9kzZHghDr
+
+tunnels:
+  account:
+    proto: http
+    addr: 4001
+  mcp:
+    proto: http
+    addr: 4003
