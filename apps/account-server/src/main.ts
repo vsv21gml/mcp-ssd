@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ConfigService } from "@nestjs/config";
 import { OidcProviderService } from "./oauth/oidc-provider.service";
+import type { Request, Response, NextFunction } from "express";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 
 async function bootstrap() {
@@ -10,7 +11,7 @@ async function bootstrap() {
   const config = app.get(ConfigService);
   const port = Number(config.get("ACCOUNT_PORT", "4001"));
 
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/auth/")) {
       return res.redirect(`/oauth${req.url}`);
     }
