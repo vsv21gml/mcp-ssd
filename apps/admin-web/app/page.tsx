@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  ActionIcon,
   Badge,
   Button,
   Checkbox,
@@ -20,7 +19,17 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useClientsStore } from "../src/store/useClientsStore";
-import { captureTokenFromUrl, clearAccessToken, fetchMe, redirectToSso } from "../src/lib/api";
+import {
+  captureTokenFromUrl,
+  clearAccessToken,
+  fetchMe,
+  redirectToSso,
+  fetchAuditLogs,
+  fetchAccessLogs,
+  logout,
+  type AuditLog,
+  type AccessLog
+} from "../src/lib/api";
 
 interface EditorState {
   clientId: string;
@@ -34,7 +43,7 @@ const emptyEditor: EditorState = {
   metadata: "{}"
 };
 
-type Section = "clients" | "users";
+type Section = "clients" | "users" | "audit" | "access";
 
 export default function AdminPage() {
   const { items, users, loading, fetchAll, create, update, remove, updateRole } = useClientsStore();
@@ -45,6 +54,9 @@ export default function AdminPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [section, setSection] = useState<Section>("clients");
   const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(new Set());
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [accessLogs, setAccessLogs] = useState<AccessLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   useEffect(() => {
     captureTokenFromUrl();
@@ -60,6 +72,18 @@ export default function AdminPage() {
         setAuthLoading(false);
       });
   }, [fetchAll]);
+
+  useEffect(() => {
+    if (section !== "audit" && section !== "access") return;
+    setLogsLoading(true);
+    const task =
+      section === "audit"
+        ? fetchAuditLogs(1, 50).then((data) => setAuditLogs(data.items || []))
+        : fetchAccessLogs(1, 50).then((data) => setAccessLogs(data.items || []));
+    task.catch(() => {
+      notifications.show({ message: "Failed to load logs", color: "red" });
+    }).finally(() => setLogsLoading(false));
+  }, [section]);
 
   const handleSave = async () => {
     try {
@@ -137,7 +161,7 @@ export default function AdminPage() {
       <header className="sdisk-app-header">
         <div className="sdisk-app-header-inner">
           <div className="sdisk-topbar-title">
-            <div className="sdisk-title">Samsung Shared Disk Admin</div>
+            <div className="sdisk-title">Samsung Shared Disk</div>
           </div>
           <Menu position="bottom-end" shadow="md">
             <Menu.Target>
@@ -160,7 +184,8 @@ export default function AdminPage() {
             <Menu.Dropdown>
               <Menu.Item
                 color="red"
-                onClick={() => {
+                onClick={async () => {
+                  await logout();
                   clearAccessToken();
                   redirectToSso();
                 }}
@@ -185,6 +210,18 @@ export default function AdminPage() {
             onClick={() => setSection("users")}
           >
             Users
+          </div>
+          <div
+            className={`admin-side-link ${section === "audit" ? "active" : ""}`}
+            onClick={() => setSection("audit")}
+          >
+            Audit Logs
+          </div>
+          <div
+            className={`admin-side-link ${section === "access" ? "active" : ""}`}
+            onClick={() => setSection("access")}
+          >
+            Access Logs
           </div>
         </aside>
 
@@ -316,6 +353,94 @@ export default function AdminPage() {
                               {user.id === me?.id ? "You" : ""}
                             </Text>
                           </Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </div>
+              </>
+            )}
+
+            {section === "audit" && (
+              <>
+                <Group justify="space-between" mb="md">
+                  <Text fw={600}>Audit Logs</Text>
+                </Group>
+
+                <div style={{ position: "relative" }}>
+                  <LoadingOverlay visible={logsLoading} />
+                  <Table withRowBorders highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Time</Table.Th>
+                        <Table.Th>Actor</Table.Th>
+                        <Table.Th>Action</Table.Th>
+                        <Table.Th>Target</Table.Th>
+                        <Table.Th>Source</Table.Th>
+                        <Table.Th>IP</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {auditLogs.length === 0 && (
+                        <Table.Tr>
+                          <Table.Td colSpan={6}>
+                            <Text size="sm" c="dimmed">
+                              No audit logs
+                            </Text>
+                          </Table.Td>
+                        </Table.Tr>
+                      )}
+                      {auditLogs.map((log) => (
+                        <Table.Tr key={log.id}>
+                          <Table.Td>{new Date(log.createdAt).toLocaleString()}</Table.Td>
+                          <Table.Td>{log.actorEmail || log.actorId}</Table.Td>
+                          <Table.Td>{log.action}</Table.Td>
+                          <Table.Td>{log.targetId || "-"}</Table.Td>
+                          <Table.Td>{log.source || "-"}</Table.Td>
+                          <Table.Td>{log.ip || "-"}</Table.Td>
+                        </Table.Tr>
+                      ))}
+                    </Table.Tbody>
+                  </Table>
+                </div>
+              </>
+            )}
+
+            {section === "access" && (
+              <>
+                <Group justify="space-between" mb="md">
+                  <Text fw={600}>Access Logs</Text>
+                </Group>
+
+                <div style={{ position: "relative" }}>
+                  <LoadingOverlay visible={logsLoading} />
+                  <Table withRowBorders highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Time</Table.Th>
+                        <Table.Th>User</Table.Th>
+                        <Table.Th>Action</Table.Th>
+                        <Table.Th>Provider</Table.Th>
+                        <Table.Th>IP</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {accessLogs.length === 0 && (
+                        <Table.Tr>
+                          <Table.Td colSpan={5}>
+                            <Text size="sm" c="dimmed">
+                              No access logs
+                            </Text>
+                          </Table.Td>
+                        </Table.Tr>
+                      )}
+                      {accessLogs.map((log) => (
+                        <Table.Tr key={log.id}>
+                          <Table.Td>{new Date(log.createdAt).toLocaleString()}</Table.Td>
+                          <Table.Td>{log.email || log.userId || "-"}</Table.Td>
+                          <Table.Td>{log.action}</Table.Td>
+                          <Table.Td>{log.provider || "-"}</Table.Td>
+                          <Table.Td>{log.ip || "-"}</Table.Td>
                         </Table.Tr>
                       ))}
                     </Table.Tbody>

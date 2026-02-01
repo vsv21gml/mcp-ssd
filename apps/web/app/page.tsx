@@ -15,7 +15,7 @@ import { useFilesStore, type FileStatus } from "../src/store/useFilesStore";
 import { UploadModal } from "../src/components/UploadModal";
 import { ApprovalStatusModal } from "../src/components/ApprovalStatusModal";
 import { FileTable } from "../src/components/FileTable";
-import { captureTokenFromUrl, clearAccessToken, fetchMe, redirectToSso } from "../src/lib/api";
+import { captureTokenFromUrl, clearAccessToken, fetchMe, redirectToSso, logout } from "../src/lib/api";
 
 const statusOptions = [
   { label: "All", value: "ALL" },
@@ -97,7 +97,8 @@ export default function HomePage() {
             <Menu.Dropdown>
               <Menu.Item
                 color="red"
-                onClick={() => {
+                onClick={async () => {
+                  await logout();
                   clearAccessToken();
                   redirectToSso();
                 }}

@@ -7,10 +7,11 @@ import { ApprovalService } from "./approval.service";
 import { EnvModule } from "../env/env.module";
 import { AuthModule } from "../auth/auth.module";
 import { UsersModule } from "../users/users.module";
+import { AuditModule } from "../audit/audit.module";
 import { ExpiryJob } from "./expiry.job";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([FileEntity]), EnvModule, AuthModule, UsersModule],
+  imports: [TypeOrmModule.forFeature([FileEntity]), EnvModule, AuthModule, UsersModule, AuditModule],
   providers: [FilesService, ApprovalService, ExpiryJob],
   controllers: [FilesController],
   exports: [FilesService]

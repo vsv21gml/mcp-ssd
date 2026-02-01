@@ -6,10 +6,13 @@ import { jwtVerify } from "jose";
 export class JwtAuthGuard implements CanActivate {
   private secret?: string;
   private issuer?: string;
+  private clockTolerance?: number;
 
   constructor(private readonly config: ConfigService) {
     this.secret = config.get<string>("JWT_SHARED_SECRET");
     this.issuer = config.get<string>("ACCOUNT_ISSUER");
+    const tolerance = Number(config.get<string>("JWT_CLOCK_TOLERANCE", "0"));
+    this.clockTolerance = Number.isFinite(tolerance) && tolerance > 0 ? tolerance : undefined;
   }
 
   async canActivate(context: ExecutionContext) {
@@ -23,16 +26,21 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const token = header.replace("Bearer ", "").trim();
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(this.secret), {
-      issuer: this.issuer || undefined
-    });
+    try {
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(this.secret), {
+        issuer: this.issuer || undefined,
+        clockTolerance: this.clockTolerance
+      });
 
-    request.user = {
-      id: payload.sub,
-      email: payload.email,
-      name: payload.name,
-      role: payload.role || "MEMBER"
-    };
-    return true;
+      request.user = {
+        id: payload.sub,
+        email: payload.email,
+        name: payload.name,
+        role: payload.role || "MEMBER"
+      };
+      return true;
+    } catch {
+      throw new UnauthorizedException("Invalid or expired token");
+    }
   }
 }

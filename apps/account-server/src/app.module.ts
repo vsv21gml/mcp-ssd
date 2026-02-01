@@ -7,6 +7,9 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { OAuthClientEntity } from "./oauth/entities/oauth-client.entity";
 import { AccountUserEntity } from "./users/account-user.entity";
 import { UsersModule } from "./users/users.module";
+import { AuditModule } from "./audit/audit.module";
+import { AuditLogEntity } from "./audit/audit-log.entity";
+import { AccessLogEntity } from "./audit/access-log.entity";
 
 @Module({
   imports: [
@@ -28,13 +31,14 @@ import { UsersModule } from "./users/users.module";
             : config.get("SSL_ENABLE") === "true" || config.get("SSL_ENABLE") === "1"
               ? true
               : undefined,
-        entities: [OAuthClientEntity, AccountUserEntity],
+        entities: [OAuthClientEntity, AccountUserEntity, AuditLogEntity, AccessLogEntity],
         synchronize: true
       })
     }),
     SsoModule,
     UsersModule,
-    OAuthModule
+    OAuthModule,
+    AuditModule
   ],
   controllers: [AuthController]
 })

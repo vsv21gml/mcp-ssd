@@ -6,12 +6,24 @@ import { SamlAuthGuard } from "./guards/saml-auth.guard";
 import { ConfigService } from "@nestjs/config";
 import { SignJWT } from "jose";
 import { UsersService } from "../users/users.service";
+import { AccessLogsService } from "../audit/access-logs.service";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { CurrentUser } from "./current-user.decorator";
 
 @Controller()
 export class AuthController {
-  constructor(private readonly config: ConfigService, private readonly users: UsersService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly users: UsersService,
+    private readonly accessLogs: AccessLogsService
+  ) {}
 
-  private async issueRedirectWithToken(req: Request, res: Response, redirectTarget?: string) {
+  private async issueRedirectWithToken(
+    req: Request,
+    res: Response,
+    redirectTarget?: string,
+    provider?: string
+  ) {
     const fallback = this.config.get<string>("WEB_DEFAULT_REDIRECT");
     const target = redirectTarget || fallback;
     if (!target) {
@@ -30,6 +42,20 @@ export class AuthController {
       email: ssoUser.email,
       name: ssoUser.displayName || ssoUser.name
     });
+
+    try {
+      await this.accessLogs.create({
+        userId: ensured.id,
+        email: ensured.email,
+        name: ensured.name,
+        provider,
+        action: "LOGIN_SUCCESS",
+        ip: getIp(req),
+        userAgent: req.headers["user-agent"] || null
+      });
+    } catch {
+      // ignore access log failures
+    }
 
     const token = await new SignJWT({
       sub: ensured.id,
@@ -54,13 +80,33 @@ export class AuthController {
 
   @Get("/auth/sso/saml")
   @UseGuards(SamlAuthGuard)
-  samlLogin() {
+  async samlLogin(@Req() req: Request) {
+    try {
+      await this.accessLogs.create({
+        provider: "saml",
+        action: "LOGIN_ATTEMPT",
+        ip: getIp(req),
+        userAgent: req.headers["user-agent"] || null
+      });
+    } catch {
+      // ignore access log failures
+    }
     return;
   }
 
   @Get("/auth/sso/oidc")
   @UseGuards(AuthGuard("oidc"))
-  oidcLogin() {
+  async oidcLogin(@Req() req: Request) {
+    try {
+      await this.accessLogs.create({
+        provider: "oidc",
+        action: "LOGIN_ATTEMPT",
+        ip: getIp(req),
+        userAgent: req.headers["user-agent"] || null
+      });
+    } catch {
+      // ignore access log failures
+    }
     return;
   }
 
@@ -68,7 +114,7 @@ export class AuthController {
   @UseGuards(SamlAuthGuard)
   samlCallback(@Req() req: Request, @Res() res: Response) {
     const redirect = (req.query.redirect as string) || (req.query.RelayState as string);
-    return this.issueRedirectWithToken(req, res, redirect);
+    return this.issueRedirectWithToken(req, res, redirect, "saml");
   }
 
   @Post("/auth/sso/saml/callback")
@@ -78,12 +124,35 @@ export class AuthController {
       (req.body && (req.body.RelayState as string)) ||
       (req.query.RelayState as string) ||
       (req.query.redirect as string);
-    return this.issueRedirectWithToken(req, res, relayState);
+    return this.issueRedirectWithToken(req, res, relayState, "saml");
   }
 
   @Get("/auth/sso/oidc/callback")
   @UseGuards(AuthGuard("oidc"))
-  oidcCallback(@Req() req: Request) {
-    return { user: (req as any).user };
+  oidcCallback(@Req() req: Request, @Res() res: Response) {
+    const redirect = req.query.redirect as string | undefined;
+    return this.issueRedirectWithToken(req, res, redirect, "oidc");
   }
+
+  @Post("/auth/logout")
+  @UseGuards(JwtAuthGuard)
+  async logout(@CurrentUser() user: any, @Req() req: Request) {
+    await this.accessLogs.create({
+      userId: user?.id,
+      email: user?.email,
+      name: user?.name,
+      action: "LOGOUT",
+      ip: getIp(req),
+      userAgent: req.headers["user-agent"] || null
+    });
+    return { ok: true };
+  }
+}
+
+function getIp(req: Request) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.ip;
 }

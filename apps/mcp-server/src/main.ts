@@ -139,6 +139,11 @@ function buildServer() {
           return { content: [{ type: "text", text: "Unauthorized." }], _meta: oauthChallenge(), isError: true };
         }
         const data = await response.json();
+        await logAudit(token, {
+          action: "MCP_FILE_LIST",
+          targetType: "FILE",
+          metadata: { status: args?.status, page: args?.page, size: args?.size }
+        });
         return { content: [{ type: "text", text: JSON.stringify(data) }] };
       }
       case "get_file_info": {
@@ -149,6 +154,12 @@ function buildServer() {
           return { content: [{ type: "text", text: "Unauthorized." }], _meta: oauthChallenge(), isError: true };
         }
         const data = await response.json();
+        await logAudit(token, {
+          action: "MCP_FILE_INFO",
+          targetType: "FILE",
+          targetId: String(args?.id || ""),
+          metadata: {}
+        });
         return { content: [{ type: "text", text: JSON.stringify(data) }] };
       }
       default:
@@ -160,6 +171,24 @@ function buildServer() {
   });
 
   return server;
+}
+
+async function logAudit(
+  token: string,
+  payload: { action: string; targetType?: string; targetId?: string; metadata?: Record<string, any> }
+) {
+  try {
+    await fetch(`${MGMT_BASE_URL}/audit-logs`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch {
+    return;
+  }
 }
 
 async function main() {

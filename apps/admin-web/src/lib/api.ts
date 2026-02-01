@@ -20,6 +20,33 @@ export interface AdminUser {
   role: "ADMIN" | "MEMBER";
 }
 
+export interface AuditLog {
+  id: string;
+  actorId: string;
+  actorEmail?: string | null;
+  actorRole?: string | null;
+  action: string;
+  targetType?: string | null;
+  targetId?: string | null;
+  metadata?: Record<string, any> | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+  source?: "account" | "management";
+}
+
+export interface AccessLog {
+  id: string;
+  userId?: string | null;
+  email?: string | null;
+  name?: string | null;
+  provider?: string | null;
+  action: string;
+  ip?: string | null;
+  userAgent?: string | null;
+  createdAt: string;
+}
+
 export function getAccessToken() {
   if (typeof window === "undefined") return null;
   return window.localStorage.getItem("sdisk_admin_token");
@@ -33,6 +60,20 @@ export function setAccessToken(token: string) {
 export function clearAccessToken() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem("sdisk_admin_token");
+}
+
+export async function logout() {
+  if (typeof window === "undefined") return;
+  const token = getAccessToken();
+  if (!token) return;
+  try {
+    await fetch(`${ACCOUNT_URL}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch {
+    return;
+  }
 }
 
 export function redirectToSso() {
@@ -129,4 +170,16 @@ export async function deleteClient(clientId: string) {
   const response = await apiFetch(`/admin/oauth/clients/${clientId}`, { method: "DELETE" });
   if (!response.ok) throw new Error("Delete failed");
   return true;
+}
+
+export async function fetchAuditLogs(page = 1, size = 50) {
+  const response = await apiFetch(`/admin/audit-logs?page=${page}&size=${size}`);
+  if (!response.ok) throw new Error("Failed to load audit logs");
+  return response.json();
+}
+
+export async function fetchAccessLogs(page = 1, size = 50) {
+  const response = await apiFetch(`/admin/access-logs?page=${page}&size=${size}`);
+  if (!response.ok) throw new Error("Failed to load access logs");
+  return response.json();
 }

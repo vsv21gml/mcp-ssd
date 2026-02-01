@@ -9,6 +9,8 @@ import { UsersModule } from "./users/users.module";
 import { FileEntity } from "./files/file.entity";
 import { EnvEntity } from "./env/env.entity";
 import { UserEntity } from "./users/user.entity";
+import { AuditModule } from "./audit/audit.module";
+import { AuditLogEntity } from "./audit/audit-log.entity";
 
 @Module({
   imports: [
@@ -28,14 +30,15 @@ import { UserEntity } from "./users/user.entity";
           : config.get("SSL_ENABLE") === "true" || config.get("SSL_ENABLE") === "1"
             ? true
             : undefined,
-        entities: [FileEntity, EnvEntity, UserEntity],
+        entities: [FileEntity, EnvEntity, UserEntity, AuditLogEntity],
         synchronize: true
       })
     }),
     AuthModule,
     UsersModule,
     FilesModule,
-    EnvModule
+    EnvModule,
+    AuditModule
   ]
 })
 export class AppModule {}

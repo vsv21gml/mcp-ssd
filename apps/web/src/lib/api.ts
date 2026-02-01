@@ -20,6 +20,20 @@ export function clearAccessToken() {
   window.localStorage.removeItem("sdisk_access_token");
 }
 
+export async function logout() {
+  if (typeof window === "undefined") return;
+  const token = getAccessToken();
+  if (!token) return;
+  try {
+    await fetch(`${ACCOUNT_URL}/auth/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  } catch {
+    return;
+  }
+}
+
 export function redirectToSso() {
   if (typeof window === "undefined") return;
   const redirect = encodeURIComponent(window.location.href);

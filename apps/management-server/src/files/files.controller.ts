@@ -9,7 +9,8 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
-  BadRequestException
+  BadRequestException,
+  Req
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
@@ -25,6 +26,8 @@ import type { FileStatus } from "@sdisk/shared";
 import { Public } from "../auth/public.decorator";
 import { ApiTags, ApiBody } from "@nestjs/swagger";
 import { ApprovalCallbackDto } from "./dto/approval-callback.dto";
+import { AuditLogsService } from "../audit/audit-logs.service";
+import type { Request } from "express";
 
 @ApiTags("files")
 @Controller("/files")
@@ -33,7 +36,8 @@ export class FilesController {
   constructor(
     private readonly files: FilesService,
     private readonly approvals: ApprovalService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly auditLogs: AuditLogsService
   ) {}
 
   @Get()
@@ -59,8 +63,10 @@ export class FilesController {
   )
   async upload(
     @CurrentUser("id") userId: string,
+    @CurrentUser() user: any,
     @UploadedFile() file: Express.Multer.File,
-    @Body("approverIds") approverIdsRaw: any
+    @Body("approverIds") approverIdsRaw: any,
+    @Req() req: Request
   ) {
     const approverIds = parseApproverIds(approverIdsRaw);
     if (approverIds.length === 0) {
@@ -82,14 +88,28 @@ export class FilesController {
     });
 
     const approvalId = await this.approvals.submitApproval(record, approverIds);
-    return this.files.setApprovalId(record, approvalId);
+    const saved = await this.files.setApprovalId(record, approvalId);
+    await this.auditLogs.create({
+      actorId: userId,
+      actorEmail: user?.email,
+      actorRole: user?.role,
+      action: "FILE_UPLOAD",
+      targetType: "FILE",
+      targetId: saved.id,
+      metadata: { originalName, size: file.size, mimeType: file.mimetype },
+      ip: getIp(req),
+      userAgent: req.headers["user-agent"] || null
+    });
+    return saved;
   }
 
   @Post(":id/reapprove")
   async reapprove(
     @CurrentUser("id") userId: string,
+    @CurrentUser() user: any,
     @Param("id") id: string,
-    @Body("approverIds") approverIdsRaw: any
+    @Body("approverIds") approverIdsRaw: any,
+    @Req() req: Request
   ) {
     const approverIds = parseApproverIds(approverIdsRaw);
     if (approverIds.length === 0) {
@@ -97,12 +117,41 @@ export class FilesController {
     }
     const file = await this.files.reapprove(userId, id);
     const approvalId = await this.approvals.submitApproval(file, approverIds);
-    return this.files.setApprovalId(file, approvalId);
+    const saved = await this.files.setApprovalId(file, approvalId);
+    await this.auditLogs.create({
+      actorId: userId,
+      actorEmail: user?.email,
+      actorRole: user?.role,
+      action: "FILE_REAPPROVE",
+      targetType: "FILE",
+      targetId: saved.id,
+      metadata: { approvalId },
+      ip: getIp(req),
+      userAgent: req.headers["user-agent"] || null
+    });
+    return saved;
   }
 
   @Delete(":id")
-  remove(@CurrentUser("id") userId: string, @CurrentUser("role") role: string, @Param("id") id: string) {
-    return this.files.remove(userId, id, role);
+  async remove(
+    @CurrentUser("id") userId: string,
+    @CurrentUser() user: any,
+    @CurrentUser("role") role: string,
+    @Param("id") id: string,
+    @Req() req: Request
+  ) {
+    const removed = await this.files.remove(userId, id, role);
+    await this.auditLogs.create({
+      actorId: userId,
+      actorEmail: user?.email,
+      actorRole: user?.role,
+      action: "FILE_DELETE",
+      targetType: "FILE",
+      targetId: id,
+      ip: getIp(req),
+      userAgent: req.headers["user-agent"] || null
+    });
+    return removed;
   }
 
   @Post("approvals/callback")
@@ -136,4 +185,12 @@ function decodeFilename(name: string): string {
   } catch {
     return name;
   }
+}
+
+function getIp(req: Request) {
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    return forwarded.split(",")[0].trim();
+  }
+  return req.ip;
 }

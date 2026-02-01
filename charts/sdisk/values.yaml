@@ -21,6 +21,7 @@ adminWeb:
     NEXT_PUBLIC_ACCOUNT_URL: https://web.example.com/oauth
     NEXT_PUBLIC_SSO_PROVIDER: saml
     ACCOUNT_API: http://account-server:4001/oauth
+    MANAGEMENT_API: http://management-server:4002/api
 
 accountServer:
   image: sdisk/account-server:latest
