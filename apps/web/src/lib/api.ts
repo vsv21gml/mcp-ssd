@@ -63,7 +63,7 @@ export async function fetchMe() {
 
 export async function fetchFiles(params: { status?: string; page?: number; size?: number }) {
   const base = typeof window === "undefined" ? "http://localhost" : window.location.origin;
-  const url = new URL(`${API_BASE}/files`, base);
+  const url = new URL("/files", base);
   if (params.status) url.searchParams.set("status", params.status);
   if (params.page) url.searchParams.set("page", String(params.page));
   if (params.size) url.searchParams.set("size", String(params.size));
