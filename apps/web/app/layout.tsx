@@ -8,8 +8,8 @@ import { MantineProvider, createTheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 
 export const metadata: Metadata = {
-  title: "Samsung Shared Disk",
-  description: "SSO file upload approval"
+  title: "Samsung Shar Drive",
+  description: "Samsung Shar Drive"
 };
 
 const theme = createTheme({

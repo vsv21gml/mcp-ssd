@@ -74,7 +74,7 @@ export default function HomePage() {
       <header className="sdisk-app-header">
         <div className="sdisk-app-header-inner">
           <div className="sdisk-topbar-title">
-            <div className="sdisk-title">Samsung Shared Disk</div>
+            <div className="sdisk-title">Samsung Shared Drive</div>
           </div>
           <Menu position="bottom-end" shadow="md">
             <Menu.Target>

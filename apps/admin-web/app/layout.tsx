@@ -7,7 +7,7 @@ import { MantineProvider, createTheme } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 
 export const metadata: Metadata = {
-  title: "Samsung Shared Disk Admin",
+  title: "Samsung Shared Drive Admin",
   description: "OAuth Client Management"
 };
 
